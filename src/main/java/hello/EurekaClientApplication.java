@@ -9,21 +9,25 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.circuitbreaker.EnableCircuitBreaker;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
-import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
+import org.springframework.cloud.netflix.eureka.EnableEurekaClient;
 import org.springframework.cloud.netflix.ribbon.RibbonClient;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.servlet.config.annotation.ContentNegotiationConfigurer;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 
 @EnableCircuitBreaker
-@EnableDiscoveryClient
+@EnableEurekaClient
 @SpringBootApplication
 @RestController
 @RibbonClient(name = "ClientApp", configuration = RibbonConfig.class)
-public class EurekaClientApplication {
+public class EurekaClientApplication extends WebMvcConfigurerAdapter {
 
 	@Autowired
 	private DiscoveryClient discoveryClient;
@@ -33,13 +37,8 @@ public class EurekaClientApplication {
 	}
 
 	@RequestMapping("/service-instances/{applicationName}")
-	public List<ServiceInstance> serviceInstancesByApplicationName(@PathVariable String applicationName) {
+	public @ResponseBody List<ServiceInstance> serviceInstancesByApplicationName(@PathVariable String applicationName) {
 		return discoveryClient.getInstances(applicationName);
-	}
-
-	@RequestMapping("/")
-	public String home() {
-		return "Hello World";
 	}
 
 	@RequestMapping("/circuitBreaker")
@@ -52,5 +51,10 @@ public class EurekaClientApplication {
 
 	public String reliable() {
 		return "Reliable Endpoint Called by Hystrix";
+	}
+
+	@Override
+	public void configureContentNegotiation(ContentNegotiationConfigurer configurer) {
+		configurer.ignoreAcceptHeader(true).defaultContentType(MediaType.APPLICATION_JSON);
 	}
 }
